@@ -3,9 +3,10 @@
 *
 * Taxes structure:
 *
-* 4% taxes for Liquidity
+* 3% taxes for Liquidity Pool
 * 2% Burn wallet
-* 2% Treasury wallet
+* 1% Treasury wallet
+* 3% RFI Static rewards to Holders
 *
 */
 pragma solidity >=0.6.0 <0.8.0;
