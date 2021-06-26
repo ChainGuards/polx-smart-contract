@@ -1127,8 +1127,12 @@ contract PolylasticTokenV3 is Context, IERC20, Ownable {
         uint256 rTreasury =  tTreasury.mul(currentRate);
         _tBurnTotal = _tBurnTotal.add(tBurn);
         _rOwned[BurnWallet] = _rOwned[BurnWallet].add(rBurn);
+        if(_isExcluded[BurnWallet])
+            _tOwned[BurnWallet] = _tOwned[BurnWallet].add(tBurn);
         _tTreasuryTotal = _tTreasuryTotal.add(tTreasury);
         _rOwned[TreasuryWallet] = _rOwned[TreasuryWallet].add(rTreasury);
+        if(_isExcluded[TreasuryWallet])
+            _tOwned[TreasuryWallet] = _tOwned[TreasuryWallet].add(tTreasury);
     }
 
     function swapAndLiquify(uint256 contractTokenBalance) private lockTheSwap {
