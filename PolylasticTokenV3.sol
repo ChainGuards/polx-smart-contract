@@ -978,7 +978,7 @@ contract PolylasticTokenV3 is Context, IERC20, Ownable {
 
     function setMaxTxAmount(uint256 maxTxAmount) external onlyOwner {
         require(maxTxAmount <= _tTotal, "maxTxAmount cannot exceed total supply");
-        _previoiusAmount=_maxTxAmount;
+        uint256 _previoiusAmount=_maxTxAmount;
         _maxTxAmount = maxTxAmount;
         emit MaxTxAmountChanged(_previoiusAmount, _maxTxAmount);
     }
