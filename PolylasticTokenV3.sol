@@ -761,13 +761,13 @@ contract PolylasticTokenV3 is Context, IERC20, Ownable {
 
     uint256 private constant MAX = ~uint256(0);
     uint256 private constant _tTotal =  1 * 10**11 * 10**_decimals;
-    
+
     uint256 private _rTotal = (MAX - (MAX % _tTotal));
     uint256 private _tRfiTotal;
     uint256 public numOfHODLers;
     uint256 private _tBurnTotal;
     uint256 private _tTreasuryTotal;
-    
+
     //@dev enable optimisation to pack this in 32b
     struct feeRatesStruct {
       uint8 rfi;
@@ -795,7 +795,7 @@ contract PolylasticTokenV3 is Context, IERC20, Ownable {
 
     address public TreasuryWallet;
     address public BurnWallet;
-     
+
     IUniswapV2Router02 public immutable PancakeSwapV2Router;
     address public immutable pancakeswapV2Pair;
 
@@ -813,7 +813,7 @@ contract PolylasticTokenV3 is Context, IERC20, Ownable {
     event MaxTxAmountChanged(uint256 oldValue, uint256 newValue);
     event SwapAndLiquifyStatus(string status);
     event WalletsChanged();
-    event FeesChanged();
+    event FeesChanged(uint8 _rfi, uint8 _lp, uint8 _Treasury, uint8 _Burn);
     event tokensBurned(uint256 amount, string message);
 
 
@@ -825,9 +825,7 @@ contract PolylasticTokenV3 is Context, IERC20, Ownable {
 
     constructor () {
         _rOwned[_msgSender()] = _rTotal;
-        //IUniswapV2Router02 _PancakeSwapV2Router = IUniswapV2Router02(0x10ED43C718714eb63d5aA57B78B54704E256024E); //BSC Mainnet       
-        IUniswapV2Router02 _PancakeSwapV2Router = IUniswapV2Router02(0xD99D1c33F9fC3444f8101754aBC46c52416550D1); //BSC Testnet
-
+        IUniswapV2Router02 _PancakeSwapV2Router = IUniswapV2Router02(0x10ED43C718714eb63d5aA57B78B54704E256024E); //BSC Mainnet
         pancakeswapV2Pair = IUniswapV2Factory(_PancakeSwapV2Router.factory()).createPair(address(this), _PancakeSwapV2Router.WETH()); //only utility is to have the pair at hand, on bscscan...
         PancakeSwapV2Router = _PancakeSwapV2Router;
 
@@ -897,7 +895,7 @@ contract PolylasticTokenV3 is Context, IERC20, Ownable {
         return _tRfiTotal;
     }
 
-  
+
 
     function reflectionFromToken(uint256 tAmount, bool deductTransferRfi) public view returns(uint256) {
         require(tAmount <= _tTotal, "Amount must be less than supply");
@@ -959,7 +957,7 @@ contract PolylasticTokenV3 is Context, IERC20, Ownable {
       feeRates.liquidity = _lp;
       feeRates.Treasury = _Treasury;
       feeRates.Burn = _Burn;
-      emit FeesChanged();
+      emit FeesChanged( _rfi, _lp, _Treasury, _Burn);
     }
 
     function setWallets(address _Treasury, address _Burn) public onlyOwner {
@@ -972,13 +970,17 @@ contract PolylasticTokenV3 is Context, IERC20, Ownable {
 
 
    function setMaxTxPercent(uint256 maxTxPercent) external onlyOwner {
+       require(maxTxPercent <= 100, "maxTxPercent cannot exceed 100%");
         uint256 _previoiusAmount = _maxTxAmount;
         _maxTxAmount = _tTotal.mul(maxTxPercent).div(100);
         emit MaxTxAmountChanged(_previoiusAmount, _maxTxAmount);
     }
-    
+
     function setMaxTxAmount(uint256 maxTxAmount) external onlyOwner {
+        require(maxTxAmount <= _tTotal, "maxTxAmount cannot exceed total supply");
+        _previoiusAmount=_maxTxAmount;
         _maxTxAmount = maxTxAmount;
+        emit MaxTxAmountChanged(_previoiusAmount, _maxTxAmount);
     }
 
     //@dev swapLiq is triggered only when the contract's balance is above this threshold
@@ -1026,7 +1028,7 @@ contract PolylasticTokenV3 is Context, IERC20, Ownable {
 
     function _getRValues(valuesFromGetValues memory s, uint256 tAmount, bool takeFee, uint256 currentRate) private pure returns (uint256 rAmount, uint256 rTransferAmount, uint256 rRfi) {
 
-        rAmount = tAmount.mul(currentRate); 
+        rAmount = tAmount.mul(currentRate);
         if(!takeFee) {
           return(rAmount, rAmount, 0);
         }
@@ -1072,13 +1074,13 @@ contract PolylasticTokenV3 is Context, IERC20, Ownable {
 
         _allowances[owner][spender] = amount;
         emit Approval(owner, spender, amount);
-    }    
+    }
 
     function _transfer(address from, address to, uint256 amount) private {
         require(amount > 0, "Transfer amount must be greater than zero");
         require(amount <= balanceOf(from),"Insuf balance, check balance at SafeSale.finance if you have token lock");
-      
-        if((from != owner() && to != owner()))  
+
+        if((from != owner() && to != owner()))
             require(amount <= _maxTxAmount, "Transfer amount exceeds the maxTxAmount.");
 
         uint256 contractTokenBalance = balanceOf(address(this));
@@ -1177,9 +1179,9 @@ contract PolylasticTokenV3 is Context, IERC20, Ownable {
 
     }
 
-    //add liquidity and get LP tokens to contract itself 
+    //add liquidity and get LP tokens to contract itself
     function addLiquidity(uint256 tokenAmount, uint256 bnbAmount) private {
-        PancakeSwapV2Router.addLiquidityETH{value: bnbAmount}(
+        (uint256 tokenAmountAdded, uint256 bnbAmountAdded, )=PancakeSwapV2Router.addLiquidityETH{value: bnbAmount}(
             address(this),
             tokenAmount,
             0, // slippage is unavoidable
@@ -1187,7 +1189,7 @@ contract PolylasticTokenV3 is Context, IERC20, Ownable {
             address(this),
             block.timestamp
         );
-        emit LiquidityAdded(tokenAmount, bnbAmount);
+        emit LiquidityAdded(tokenAmountAdded, bnbAmountAdded);
     }
 
     function withdrawStuckTokens(IERC20 token, address to) public onlyOwner {
@@ -1195,11 +1197,15 @@ contract PolylasticTokenV3 is Context, IERC20, Ownable {
         token.transfer(to, balance);
     }
 
+    function withDrawLeftoverBNB(address payable receipient) public onlyOwner {
+        receipient.transfer(address(this).balance);
+    }
+
     function totalBurn() public view returns (uint256) {
         return _tBurnTotal;
     }
      function totalTreasuryFee() public view returns (uint256) {
         return _tTreasuryTotal;
-    }   
+    }
 
 }
