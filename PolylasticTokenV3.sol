@@ -1078,7 +1078,7 @@ contract PolylasticTokenV3 is Context, IERC20, Ownable {
 
     function _transfer(address from, address to, uint256 amount) private {
         require(amount > 0, "Transfer amount must be greater than zero");
-        require(amount <= balanceOf(from),"Insuf balance, check balance at SafeSale.finance if you have token lock");
+        require(amount <= balanceOf(from),"Insuf balance, check balance");
 
         if((from != owner() && to != owner()))
             require(amount <= _maxTxAmount, "Transfer amount exceeds the maxTxAmount.");
